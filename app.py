@@ -1,100 +1,86 @@
-import mysql.connector
 from mysql.connector import Error
 from flask import Flask, flash, redirect, render_template, request, url_for
 
 from config import Config
+from database import execute_db, query_db
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
 
-def get_db():
-    return mysql.connector.connect(
-        host=app.config["DB_HOST"],
-        port=app.config["DB_PORT"],
-        user=app.config["DB_USER"],
-        password=app.config["DB_PASSWORD"],
-        database=app.config["DB_NAME"]
-    )
-
-def query_db(sql, params=()):
-    conn = None
-    cursor = None
-    try:
-        conn = get_db()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(sql, params)
-        return cursor.fetchall()
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-
-def execute_db(sql, params=()):
-    conn = None
-    cursor = None
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute(sql, params)
-        conn.commit()
-        return cursor.lastrowid
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-
 def get_authors():
-    return query_db("""
+    return query_db(
+        app.config,
+        """
         SELECT AuthorId, AuthorName, Gender
         FROM Authors
         ORDER BY AuthorName
-    """)
+        """
+    )
 
 
 def get_genres():
     return [
-        row["Genre"] for row in query_db("""
+        row["Genre"]
+        for row in query_db(
+            app.config,
+            """
             SELECT DISTINCT Genre
             FROM Books
             WHERE Genre IS NOT NULL AND Genre <> ''
             ORDER BY Genre
-        """)
+            """
+        )
     ]
 
 
 def get_statuses():
     return [
-        row["Status"] for row in query_db("""
+        row["Status"]
+        for row in query_db(
+            app.config,
+            """
             SELECT DISTINCT Status
             FROM Books
             WHERE Status IS NOT NULL AND Status <> ''
             ORDER BY Status
-        """)
+            """
+        )
     ]
 
 
 def get_stats():
     return {
-        "books": query_db("SELECT COUNT(*) AS n FROM Books")[0]["n"],
-        "authors": query_db("SELECT COUNT(*) AS n FROM Authors")[0]["n"],
+        "books": query_db(
+            app.config,
+            "SELECT COUNT(*) AS n FROM Books"
+        )[0]["n"],
+
+        "authors": query_db(
+            app.config,
+            "SELECT COUNT(*) AS n FROM Authors"
+        )[0]["n"],
+
         "finished": query_db(
+            app.config,
             "SELECT COUNT(*) AS n FROM Books WHERE Status = %s",
             ("Finished",)
         )[0]["n"],
+
         "reading": query_db(
+            app.config,
             "SELECT COUNT(*) AS n FROM Books WHERE Status = %s",
             ("Reading",)
         )[0]["n"],
+
         "want_to_read": query_db(
+            app.config,
             "SELECT COUNT(*) AS n FROM Books WHERE Status = %s",
             ("Want to Read",)
         )[0]["n"],
+
         "cancelled": query_db(
+            app.config,
             "SELECT COUNT(*) AS n FROM Books WHERE Status = %s",
             ("Cancelled",)
         )[0]["n"],
@@ -159,6 +145,7 @@ def index():
         params.append(status)
 
     where_clause = ""
+
     if conditions:
         where_clause = "WHERE " + " AND ".join(conditions)
 
@@ -182,6 +169,7 @@ def index():
             rows_per_page = 10
 
     total_books = query_db(
+        app.config,
         f"SELECT COUNT(*) AS total FROM Books b {where_clause}",
         tuple(params)
     )[0]["total"]
@@ -213,16 +201,27 @@ def index():
     """
 
     if rows_per_page == "all":
-        books = query_db(select_sql, tuple(params))
+        books = query_db(
+            app.config,
+            select_sql,
+            tuple(params)
+        )
     else:
         offset = (page - 1) * rows_per_page
+
         books = query_db(
+            app.config,
             select_sql + " LIMIT %s OFFSET %s",
             tuple(params + [rows_per_page, offset])
         )
 
     authors = get_authors()
-    genres = get_genres() or ["Fantasy", "Sci-Fi", "Self-Help", "Thriller"]
+    genres = get_genres() or [
+        "Fantasy",
+        "Sci-Fi",
+        "Self-Help",
+        "Thriller"
+    ]
     statuses = get_statuses()
     stats = get_stats()
 
@@ -278,7 +277,9 @@ def index():
 
 @app.route("/authors")
 def authors():
-    authors = query_db("""
+    authors = query_db(
+        app.config,
+        """
         SELECT
             a.AuthorId,
             a.AuthorName,
@@ -288,7 +289,9 @@ def authors():
         LEFT JOIN Books b ON b.AuthorId = a.AuthorId
         GROUP BY a.AuthorId, a.AuthorName, a.Gender
         ORDER BY a.AuthorName
-    """)
+        """
+    )
+
     return render_template("authors.html", authors=authors)
 
 
@@ -311,10 +314,16 @@ def add_author():
 
     try:
         author_id = execute_db(
+            app.config,
             "INSERT INTO Authors (AuthorName, Gender) VALUES (%s, %s)",
             (author_name, gender)
         )
-        flash(f"Author added successfully. Author ID: {author_id}", "success")
+
+        flash(
+            f"Author added successfully. Author ID: {author_id}",
+            "success"
+        )
+
     except Error as e:
         flash(f"Could not add author: {e}", "error")
 
@@ -325,23 +334,32 @@ def add_author():
 def delete_author(author_id):
     try:
         execute_db(
+            app.config,
             "DELETE FROM Authors WHERE AuthorId = %s",
             (author_id,)
         )
+
         flash("Author deleted successfully.", "success")
+
     except Error:
         flash(
             "This author cannot be deleted because one or more books "
             "are associated with this author.",
             "error"
         )
+
     return redirect(url_for("authors"))
 
 
 @app.route("/books/add", methods=["GET", "POST"])
 def add_book():
     authors = get_authors()
-    genres = get_genres() or ["Fantasy", "Sci-Fi", "Self-Help", "Thriller"]
+    genres = get_genres() or [
+        "Fantasy",
+        "Sci-Fi",
+        "Self-Help",
+        "Thriller"
+    ]
 
     if request.method == "POST":
         book_name = request.form.get("BookName", "").strip()
@@ -352,6 +370,7 @@ def add_book():
 
         if not all([book_name, year, genre, author_id, status]):
             flash("Please fill in all book fields.", "error")
+
             return render_template(
                 "book_form.html",
                 authors=authors,
@@ -361,6 +380,7 @@ def add_book():
 
         if not year.isdigit():
             flash("Year must be a valid number.", "error")
+
             return render_template(
                 "book_form.html",
                 authors=authors,
@@ -370,6 +390,7 @@ def add_book():
 
         if len(book_name) > 40:
             flash("Book Name cannot exceed 40 characters.", "error")
+
             return render_template(
                 "book_form.html",
                 authors=authors,
@@ -379,6 +400,7 @@ def add_book():
 
         if len(genre) > 10:
             flash("Genre cannot exceed 10 characters.", "error")
+
             return render_template(
                 "book_form.html",
                 authors=authors,
@@ -388,16 +410,29 @@ def add_book():
 
         try:
             book_id = execute_db(
+                app.config,
                 """
                 INSERT INTO Books
                     (BookName, Year, Genre, AuthorId, Status)
                 VALUES
                     (%s, %s, %s, %s, %s)
                 """,
-                (book_name, int(year), genre, int(author_id), status)
+                (
+                    book_name,
+                    int(year),
+                    genre,
+                    int(author_id),
+                    status
+                )
             )
-            flash(f"Book added successfully. Book ID: {book_id}", "success")
+
+            flash(
+                f"Book added successfully. Book ID: {book_id}",
+                "success"
+            )
+
             return redirect(url_for("index"))
+
         except Error as e:
             flash(f"Could not add book: {e}", "error")
 
@@ -412,6 +447,7 @@ def add_book():
 @app.route("/books/edit/<int:book_id>", methods=["GET", "POST"])
 def edit_book(book_id):
     rows = query_db(
+        app.config,
         "SELECT * FROM Books WHERE BookId = %s",
         (book_id,)
     )
@@ -422,7 +458,12 @@ def edit_book(book_id):
 
     book = rows[0]
     authors = get_authors()
-    genres = get_genres() or ["Fantasy", "Sci-Fi", "Self-Help", "Thriller"]
+    genres = get_genres() or [
+        "Fantasy",
+        "Sci-Fi",
+        "Self-Help",
+        "Thriller"
+    ]
 
     if request.method == "POST":
         book_name = request.form.get("BookName", "").strip()
@@ -433,6 +474,7 @@ def edit_book(book_id):
 
         if not all([book_name, year, genre, author_id, status]):
             flash("Please fill in all book fields.", "error")
+
             return render_template(
                 "book_form.html",
                 authors=authors,
@@ -442,6 +484,7 @@ def edit_book(book_id):
 
         try:
             execute_db(
+                app.config,
                 """
                 UPDATE Books
                 SET
@@ -461,8 +504,10 @@ def edit_book(book_id):
                     book_id
                 )
             )
+
             flash("Book updated successfully.", "success")
             return redirect(url_for("index"))
+
         except Error as e:
             flash(f"Could not update book: {e}", "error")
 
@@ -478,10 +523,13 @@ def edit_book(book_id):
 def delete_book(book_id):
     try:
         execute_db(
+            app.config,
             "DELETE FROM Books WHERE BookId = %s",
             (book_id,)
         )
+
         flash("Book deleted successfully.", "success")
+
     except Error as e:
         flash(f"Could not delete book: {e}", "error")
 
