@@ -1,25 +1,21 @@
-import os
-
 import mysql.connector
 from mysql.connector import Error
 from flask import Flask, flash, redirect, render_template, request, url_for
-from dotenv import load_dotenv
 
-load_dotenv()
+from config import Config
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "development-only-change-this")
+app.config.from_object(Config)
 
 
 def get_db():
     return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "127.0.0.1"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "Mybooks")
+        host=app.config["DB_HOST"],
+        port=app.config["DB_PORT"],
+        user=app.config["DB_USER"],
+        password=app.config["DB_PASSWORD"],
+        database=app.config["DB_NAME"]
     )
-
 
 def query_db(sql, params=()):
     conn = None
