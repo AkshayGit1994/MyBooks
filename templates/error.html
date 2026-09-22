@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Database Error - My Books{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Database Error</h1>
+    <p>{{ message }}</p>
+    <p>Check the <code>.env</code> file and MySQL connection, then restart Flask.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Authors - My Books{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+
+    <div>
+        <h1>Authors</h1>
+
+        <p>
+            Manage the authors in your Mybooks database.
+        </p>
+    </div>
+
+</section>
+
+
+<div class="two-column">
+
+
+    <!-- ADD AUTHOR -->
+
+    <div class="card">
+
+        <h2>Add Author</h2>
+
+        <form
+            method="post"
+            action="{{ url_for('add_author') }}"
+            class="stack"
+        >
+
+            <label>
+
+                Author Name
+
+                <input
+                    type="text"
+                    name="AuthorName"
+                    maxlength="20"
+                    required
+                >
+
+                <small>
+                    Maximum 20 characters.
+                </small>
+
+            </label>
+
+
+            <label>
+
+                Gender
+
+                <select
+                    name="Gender"
+                    required
+                >
+
+                    <option value="">
+                        -- Select --
+                    </option>
+
+                    <option value="Male">
+                        Male
+                    </option>
+
+                    <option value="Female">
+                        Female
+                    </option>
+
+                    <option value="Other">
+                        Other
+                    </option>
+
+                </select>
+
+            </label>
+
+
+            <button
+                class="button"
+                type="submit"
+            >
+                Add Author
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- AUTHOR LIST -->
+
+    <div class="card">
+
+        <h2>Author List</h2>
+
+
+        {% if authors %}
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>Name</th>
+
+                        <th>Gender</th>
+
+                        <th>Books</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for author in authors %}
+
+                    <tr>
+
+                        <td>
+                            {{ author.AuthorId }}
+                        </td>
+
+                        <td>
+                            <strong>
+                                {{ author.AuthorName }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ author.Gender }}
+                        </td>
+
+                        <td>
+                            {{ author.BookCount }}
+                        </td>
+
+                        <td>
+
+                            <form
+                                method="post"
+                                action="{{ url_for(
+                                    'delete_author',
+                                    author_id=author.AuthorId
+                                ) }}"
+                                onsubmit="
+                                    return confirm(
+                                        'Delete this author?'
+                                    );
+                                "
+                            >
+
+                                <button
+                                    class="link danger"
+                                    type="submit"
+                                >
+                                    Delete
+                                </button>
+
+                            </form>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+            <div class="empty">
+                No authors found.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

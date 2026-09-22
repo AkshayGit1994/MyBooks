@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}My Books - Library{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+    <div>
+        <h1>My Book Library</h1>
+        <p>Manage your books, authors and reading status.</p>
+    </div>
+    <a class="button" href="{{ url_for('add_book') }}">+ Add Book</a>
+</section>
+
+<section class="stats">
+    <div class="stat"><span>Total Books</span><strong>{{ stats.books }}</strong></div>
+    <div class="stat"><span>Authors</span><strong>{{ stats.authors }}</strong></div>
+    <div class="stat"><span>Finished</span><strong>{{ stats.finished }}</strong></div>
+    <div class="stat"><span>Reading</span><strong>{{ stats.reading }}</strong></div>
+    <div class="stat"><span>Want to Read</span><strong>{{ stats.want_to_read }}</strong></div>
+    <div class="stat"><span>Cancelled</span><strong>{{ stats.cancelled }}</strong></div>
+</section>
+
+{% set active_filters = [] %}
+{% if filters.book_id %}{% set _ = active_filters.append("Book ID") %}{% endif %}
+{% if filters.book_name %}{% set _ = active_filters.append("Book Name") %}{% endif %}
+{% if filters.year %}{% set _ = active_filters.append("Year") %}{% endif %}
+{% if filters.genre %}{% set _ = active_filters.append("Genre") %}{% endif %}
+{% if filters.author_id %}{% set _ = active_filters.append("Author") %}{% endif %}
+{% if filters.status %}{% set _ = active_filters.append("Status") %}{% endif %}
+
+{% if active_filters %}
+<div class="active-filters">
+    <strong>Filters:</strong>
+    {% for name in active_filters %}
+        <span class="filter-badge">{{ name }}</span>
+    {% endfor %}
+    <a class="clear-filter" href="{{ url_for('index') }}">Clear All</a>
+</div>
+{% endif %}
+
+<div class="card">
+
+    <div class="card-header">
+        <div>
+            <h2>Books</h2>
+            <p class="muted">
+                Showing
+                {% if total_books > 0 %}
+                    {% if rows_param == 'all' %}
+                        1 - {{ total_books }}
+                    {% else %}
+                        {{ ((page - 1) * (rows_param|int)) + 1 }}
+                        -
+                        {{ [page * (rows_param|int), total_books] | min }}
+                    {% endif %}
+                {% else %}
+                    0
+                {% endif %}
+                of {{ total_books }} books
+            </p>
+        </div>
+        <a href="{{ url_for('add_book') }}">Add a book</a>
+    </div>
+
+    {% if books %}
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+
+                    <th>
+                        <div class="column-header">
+                            <a class="sort-link" href="{{ sort_url('BookId') }}">
+                                ID
+                                {% if sort == 'BookId' %}
+                                    <span class="sort-indicator">{{ '▲' if direction == 'asc' else '▼' }}</span>
+                                {% endif %}
+                            </a>
+                            <button class="column-filter-button" type="button"
+                                    onclick="toggleFilter('book-id-filter')"
+                                    title="Filter Book ID">▼</button>
+                        </div>
+
+                        <div id="book-id-filter" class="filter-menu">
+                            <form method="get" action="{{ url_for('index') }}">
+                                <input type="number" name="book_id"
+                                       value="{{ filters.book_id }}"
+                                       placeholder="Book ID...">
+                                <input type="hidden" name="book_name" value="{{ filters.book_name }}">
+                                <input type="hidden" name="year" value="{{ filters.year }}">
+                                <input type="hidden" name="genre" value="{{ filters.genre }}">
+                                <input type="hidden" name="author_id" value="{{ filters.author_id }}">
+                                <input type="hidden" name="status" value="{{ filters.status }}">
+                                <input type="hidden" name="rows" value="{{ rows_param }}">
+                                <input type="hidden" name="sort" value="{{ sort }}">
+                                <input type="hidden" name="direction" value="{{ direction }}">
+                                <button class="button small" type="submit">Apply</button>
+                            </form>
+                        </div>
+                    </th>
+
+                    <th>
+                        <div class="column-header">
+                            <a class="sort-link" href="{{ sort_url('BookName') }}">
+                                Book Name
+                                {% if sort == 'BookName' %}
+                                    <span class="sort-indicator">{{ '▲' if direction == 'asc' else '▼' }}</span>
+                                {% endif %}
+                            </a>
+                            <button class="column-filter-button" type="button"
+                                    onclick="toggleFilter('book-name-filter')"
+                                    title="Filter Book Name">▼</button>
+                        </div>
+
+                        <div id="book-name-filter" class="filter-menu">
+                            <form method="get" action="{{ url_for('index') }}">
+                                <input type="text" name="book_name"
+                                       value="{{ filters.book_name }}"
+                                       placeholder="Search book...">
+                                <input type="hidden" name="book_id" value="{{ filters.book_id }}">
+                                <input type="hidden" name="year" value="{{ filters.year }}">
+                                <input type="hidden" name="genre" value="{{ filters.genre }}">
+                                <input type="hidden" name="author_id" value="{{ filters.author_id }}">
+                                <input type="hidden" name="status" value="{{ filters.status }}">
+                                <input type="hidden" name="rows" value="{{ rows_param }}">
+                                <input type="hidden" name="sort" value="{{ sort }}">
+                                <input type="hidden" name="direction" value="{{ direction }}">
+                                <button class="button small" type="submit">Apply</button>
+                            </form>
+                        </div>
+                    </th>
+
+                    <th>
+                        <div class="column-header">
+                            <a class="sort-link" href="{{ sort_url('Year') }}">
+                                Year
+                                {% if sort == 'Year' %}
+                                    <span class="sort-indicator">{{ '▲' if direction == 'asc' else '▼' }}</span>
+                                {% endif %}
+                            </a>
+                            <button class="column-filter-button" type="button"
+                                    onclick="toggleFilter('year-filter')"
+                                    title="Filter Year">▼</button>
+                        </div>
+
+                        <div id="year-filter" class="filter-menu">
+                            <form method="get" action="{{ url_for('index') }}">
+                                <input type="number" name="year"
+                                       value="{{ filters.year }}"
+                                       placeholder="Year...">
+                                <input type="hidden" name="book_id" value="{{ filters.book_id }}">
+                                <input type="hidden" name="book_name" value="{{ filters.book_name }}">
+                                <input type="hidden" name="genre" value="{{ filters.genre }}">
+                                <input type="hidden" name="author_id" value="{{ filters.author_id }}">
+                                <input type="hidden" name="status" value="{{ filters.status }}">
+                                <input type="hidden" name="rows" value="{{ rows_param }}">
+                                <input type="hidden" name="sort" value="{{ sort }}">
+                                <input type="hidden" name="direction" value="{{ direction }}">
+                                <button class="button small" type="submit">Apply</button>
+                            </form>
+                        </div>
+                    </th>
+
+                    <th>
+                        <div class="column-header">
+                            <a class="sort-link" href="{{ sort_url('Genre') }}">
+                                Genre
+                                {% if sort == 'Genre' %}
+                                    <span class="sort-indicator">{{ '▲' if direction == 'asc' else '▼' }}</span>
+                                {% endif %}
+                            </a>
+                            <button class="column-filter-button" type="button"
+                                    onclick="toggleFilter('genre-filter')"
+                                    title="Filter Genre">▼</button>
+                        </div>
+
+                        <div id="genre-filter" class="filter-menu">
+                            <form method="get" action="{{ url_for('index') }}">
+                                <select name="genre">
+                                    <option value="">All Genres</option>
+                                    {% for item in genres %}
+                                        <option value="{{ item }}" {% if filters.genre == item %}selected{% endif %}>
+                                            {{ item }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="book_id" value="{{ filters.book_id }}">
+                                <input type="hidden" name="book_name" value="{{ filters.book_name }}">
+                                <input type="hidden" name="year" value="{{ filters.year }}">
+                                <input type="hidden" name="author_id" value="{{ filters.author_id }}">
+                                <input type="hidden" name="status" value="{{ filters.status }}">
+                                <input type="hidden" name="rows" value="{{ rows_param }}">
+                                <input type="hidden" name="sort" value="{{ sort }}">
+                                <input type="hidden" name="direction" value="{{ direction }}">
+                                <button class="button small" type="submit">Apply</button>
+                            </form>
+                        </div>
+                    </th>
+
+                    <th>
+                        <div class="column-header">
+                            <a class="sort-link" href="{{ sort_url('AuthorName') }}">
+                                Author
+                                {% if sort == 'AuthorName' %}
+                                    <span class="sort-indicator">{{ '▲' if direction == 'asc' else '▼' }}</span>
+                                {% endif %}
+                            </a>
+                            <button class="column-filter-button" type="button"
+                                    onclick="toggleFilter('author-filter')"
+                                    title="Filter Author">▼</button>
+                        </div>
+
+                        <div id="author-filter" class="filter-menu">
+                            <form method="get" action="{{ url_for('index') }}">
+                                <select name="author_id">
+                                    <option value="">All Authors</option>
+                                    {% for author in authors %}
+                                        <option value="{{ author.AuthorId }}"
+                                                {% if filters.author_id == author.AuthorId|string %}selected{% endif %}>
+                                            {{ author.AuthorName }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="book_id" value="{{ filters.book_id }}">
+                                <input type="hidden" name="book_name" value="{{ filters.book_name }}">
+                                <input type="hidden" name="year" value="{{ filters.year }}">
+                                <input type="hidden" name="genre" value="{{ filters.genre }}">
+                                <input type="hidden" name="status" value="{{ filters.status }}">
+                                <input type="hidden" name="rows" value="{{ rows_param }}">
+                                <input type="hidden" name="sort" value="{{ sort }}">
+                                <input type="hidden" name="direction" value="{{ direction }}">
+                                <button class="button small" type="submit">Apply</button>
+                            </form>
+                        </div>
+                    </th>
+
+                    <th>
+                        <div class="column-header">
+                            <a class="sort-link" href="{{ sort_url('Status') }}">
+                                Status
+                                {% if sort == 'Status' %}
+                                    <span class="sort-indicator">{{ '▲' if direction == 'asc' else '▼' }}</span>
+                                {% endif %}
+                            </a>
+                            <button class="column-filter-button" type="button"
+                                    onclick="toggleFilter('status-filter')"
+                                    title="Filter Status">▼</button>
+                        </div>
+
+                        <div id="status-filter" class="filter-menu">
+                            <form method="get" action="{{ url_for('index') }}">
+                                <select name="status">
+                                    <option value="">All Statuses</option>
+                                    {% for item in statuses %}
+                                        <option value="{{ item }}" {% if filters.status == item %}selected{% endif %}>
+                                            {{ item }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="book_id" value="{{ filters.book_id }}">
+                                <input type="hidden" name="book_name" value="{{ filters.book_name }}">
+                                <input type="hidden" name="year" value="{{ filters.year }}">
+                                <input type="hidden" name="genre" value="{{ filters.genre }}">
+                                <input type="hidden" name="author_id" value="{{ filters.author_id }}">
+                                <input type="hidden" name="rows" value="{{ rows_param }}">
+                                <input type="hidden" name="sort" value="{{ sort }}">
+                                <input type="hidden" name="direction" value="{{ direction }}">
+                                <button class="button small" type="submit">Apply</button>
+                            </form>
+                        </div>
+                    </th>
+
+                    <th>Actions</th>
+
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for book in books %}
+                <tr>
+                    <td>{{ book.BookId }}</td>
+                    <td><strong>{{ book.BookName }}</strong></td>
+                    <td>{{ book.Year }}</td>
+                    <td>{{ book.Genre }}</td>
+                    <td>{{ book.AuthorName or "Unknown" }}</td>
+                    <td>
+                        <span class="status status-{{ book.Status|lower|replace(' ', '-') }}">
+                            {{ book.Status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('edit_book', book_id=book.BookId) }}">Edit</a>
+                            <form method="post"
+                                  action="{{ url_for('delete_book', book_id=book.BookId) }}"
+                                  onsubmit="return confirm('Delete this book?');">
+                                <button class="link danger" type="submit">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+
+    {% else %}
+
+    <div class="empty">
+        No books match the selected filters.
+        <br><br>
+        <a class="button" href="{{ url_for('index') }}">Clear Filters</a>
+    </div>
+
+    {% endif %}
+
+    <div class="table-footer">
+
+        <div class="rows-selector">
+            <label for="rows">Rows per page:</label>
+            <select id="rows" onchange="changeRows(this.value)">
+                <option value="10" {% if rows_param == '10' %}selected{% endif %}>10</option>
+                <option value="25" {% if rows_param == '25' %}selected{% endif %}>25</option>
+                <option value="50" {% if rows_param == '50' %}selected{% endif %}>50</option>
+                <option value="100" {% if rows_param == '100' %}selected{% endif %}>100</option>
+                <option value="all" {% if rows_param == 'all' %}selected{% endif %}>All</option>
+            </select>
+        </div>
+
+        {% if total_pages > 1 %}
+        <div class="pagination">
+
+            {% if page > 1 %}
+                <a href="{{ url_for('index', page=page-1, **filters) }}">← Previous</a>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+
+                    {% if p == page %}
+                        <span class="current">{{ p }}</span>
+                    {% else %}
+                        <a href="{{ url_for('index', page=p, **filters) }}">{{ p }}</a>
+                    {% endif %}
+
+                {% elif p == page - 3 or p == page + 3 %}
+                    <span>...</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if page < total_pages %}
+                <a href="{{ url_for('index', page=page+1, **filters) }}">Next →</a>
+            {% endif %}
+
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+function toggleFilter(id) {
+    const menu = document.getElementById(id);
+
+    document.querySelectorAll(".filter-menu").forEach(function(item) {
+        if (item !== menu) {
+            item.classList.remove("show");
+        }
+    });
+
+    menu.classList.toggle("show");
+}
+
+document.addEventListener("click", function(event) {
+    if (
+        !event.target.closest(".column-filter-button") &&
+        !event.target.closest(".filter-menu")
+    ) {
+        document.querySelectorAll(".filter-menu").forEach(function(menu) {
+            menu.classList.remove("show");
+        });
+    }
+});
+
+function changeRows(value) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("rows", value);
+    url.searchParams.set("page", "1");
+    window.location.href = url.toString();
+}
+</script>
+
+{% endblock %}
+
