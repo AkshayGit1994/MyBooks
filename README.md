@@ -1,51 +1,187 @@
-# MyBooks Flask Website
+# MyBooks — Flask Book Management System
 
-A small Flask website for entering and managing the `Authors` and `Books` tables in the MySQL `Mybooks` database.
+MyBooks is a web-based book management application built with **Python, Flask, MySQL, HTML, CSS, and Jinja2**.
 
-## Your existing schema
-
-The application expects:
-
-- `Authors(AuthorId, AuthorName, Gender)`
-- `Books(BookId, BookName, Year, Genre, AuthorId, Status)`
-
-It does not modify your database schema.
+The application allows users to manage a personal collection of books and authors, track reading status, search and filter books, and view basic statistics about their library.
 
 ## Features
 
-- Add authors
-- Delete authors
-- Add books
-- Edit books
-- Delete books
-- Search books by book name, author, genre or status
-- Dashboard counts
-- Author/book relationship through `AuthorId`
-- Parameterized SQL queries
-- Responsive interface
+* View all books in a searchable and sortable table
+* Filter books by:
 
-The application does not depend on the `Count` and `ReadStatus` views because their definitions were not supplied. The dashboard calculates its counts directly from `Books`.
+  * Book ID
+  * Book name
+  * Year
+  * Genre
+  * Author
+  * Reading status
+* Sort books by clicking table column headers
+* Choose the number of rows displayed per page
+* Add new books
+* Edit existing books
+* Delete books
+* Add authors
+* Delete authors
+* View the number of books associated with each author
+* Dashboard statistics for:
 
-## 1. Create the Python environment
+  * Total books
+  * Total authors
+  * Finished books
+  * Currently reading
+  * Want to Read
+  * Cancelled books
+* Genre selection using genres already present in the database
+* Form validation
+* Parameterized SQL queries
+* Responsive web interface
 
-On Debian/Ubuntu:
+## Technology Stack
 
-```bash
-sudo apt update
-sudo apt install python3 python3-venv
+| Technology             | Purpose                          |
+| ---------------------- | -------------------------------- |
+| Python 3               | Application programming language |
+| Flask                  | Web framework                    |
+| MySQL                  | Database                         |
+| mysql-connector-python | MySQL database connectivity      |
+| Jinja2                 | HTML templating                  |
+| HTML5                  | Page structure                   |
+| CSS3                   | Styling                          |
+| python-dotenv          | Environment variable management  |
+| Git                    | Version control                  |
+
+## Project Structure
+
+```text
+mybooks_web/
+│
+├── app.py
+├── requirements.txt
+├── README.md
+├── .env.example
+├── .gitignore
+│
+├── static/
+│   └── style.css
+│
+└── templates/
+    ├── base.html
+    ├── index.html
+    ├── authors.html
+    ├── book_form.html
+    └── error.html
 ```
 
-From this project directory:
+## Database
+
+The application uses an existing MySQL database named:
+
+```text
+Mybooks
+```
+
+The main tables are:
+
+### Authors
+
+```text
+AuthorId
+AuthorName
+Gender
+```
+
+`AuthorId` is the primary key and uses `AUTO_INCREMENT`.
+
+### Books
+
+```text
+BookId
+BookName
+Year
+Genre
+AuthorId
+Status
+```
+
+`BookId` is the primary key and uses `AUTO_INCREMENT`.
+
+`AuthorId` is a foreign key referencing:
+
+```text
+Authors.AuthorId
+```
+
+This creates a relationship between books and their authors.
+
+The database also contains the following views:
+
+```text
+Count
+ReadStatus
+```
+
+The application does not depend on these views for its dashboard calculations. Statistics are calculated directly from the `Books` table.
+
+## Current Genres
+
+The application dynamically reads the available genres from the database.
+
+The current database contains:
+
+```text
+Fantasy
+Sci-Fi
+Self-Help
+Thriller
+```
+
+## Reading Status
+
+The application currently supports:
+
+```text
+Finished
+Reading
+Want to Read
+Cancelled
+```
+
+## Requirements
+
+* Python 3
+* MySQL Server
+* MySQL database named `Mybooks`
+
+## Installation
+
+### 1. Clone the repository
+
+```bash
+git clone <your-github-repository-url>
+cd mybooks_web
+```
+
+### 2. Create a virtual environment
 
 ```bash
 python3 -m venv .venv
+```
+
+Activate it:
+
+```bash
 source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-## 2. Configure MySQL
+### 4. Configure environment variables
 
-Copy the example configuration:
+Create your local `.env` file from the example:
 
 ```bash
 cp .env.example .env
@@ -59,73 +195,104 @@ DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=YOUR_MYSQL_PASSWORD
 DB_NAME=Mybooks
-FLASK_SECRET_KEY=CHANGE_THIS
+FLASK_SECRET_KEY=CHANGE_THIS_TO_A_RANDOM_SECRET
 ```
 
-Make sure the MySQL database already exists:
+**Do not commit `.env` to GitHub.**
 
-```sql
-USE Mybooks;
-SHOW TABLES;
-```
+The `.env` file contains local configuration and credentials and is intentionally excluded through `.gitignore`.
 
-No schema-changing SQL is required by this application.
+### 5. Start the application
 
-## 3. Start the website
+Make sure the virtual environment is active:
 
 ```bash
 source .venv/bin/activate
+```
+
+Then run:
+
+```bash
 python3 app.py
 ```
 
-Then open:
+The application will start on:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-## Important note about IDs
+## Accessing the Application From Another Machine
 
-Your current schema shows:
+The Flask application is configured to listen on:
+
+```python
+host="0.0.0.0"
+```
+
+Therefore, when the VM is reachable from another machine, the application can be accessed using the VM's IP address:
 
 ```text
-AuthorId int NOT NULL PRIMARY KEY
-BookId   int NOT NULL PRIMARY KEY
+http://<VM-IP>:5000
 ```
 
-Neither column is `AUTO_INCREMENT`.
+For example:
 
-Therefore, this website asks you to enter `AuthorId` and `BookId` manually when adding records.
-
-If you later want the website to generate IDs automatically, the database schema can be changed to use `AUTO_INCREMENT`. Do not make that change blindly if existing IDs or relationships need to be preserved.
-
-## Status values
-
-The form currently provides:
-
-- Finished
-- Reading
-- Want to Read
-- Cancelled
-
-All fit within your current `varchar(12)` limit.
-
-If your existing database uses different status names, edit the list in `templates/book_form.html`.
-
-## Running on your local network
-
-For testing from another machine on your LAN, change the last line of `app.py` from:
-
-```python
-app.run(host="127.0.0.1", port=5000, debug=True)
+```text
+http://192.168.x.x:5000
 ```
 
-to:
+The exact IP address depends on the VM's network configuration.
 
-```python
-app.run(host="0.0.0.0", port=5000, debug=False)
-```
+For production deployment, a production WSGI server such as Gunicorn should be used instead of Flask's built-in development server.
 
-Then access it using the Debian machine's LAN IP and port 5000.
+## Security Notes
 
-For a real deployment, use a production WSGI server such as Gunicorn and put it behind a reverse proxy rather than using Flask's development server.
+* Database credentials are stored in `.env`.
+* `.env` is excluded from Git using `.gitignore`.
+* SQL queries use parameterized values rather than directly concatenating user input.
+* The Flask secret key should be supplied through the environment.
+* Debug mode is disabled when the application is started normally.
+
+## Future Improvements
+
+Planned improvements include:
+
+* Refactoring the application into a modular Flask structure
+* SQLAlchemy ORM integration
+* Improved Bootstrap-based UI
+* Interactive dashboard charts
+* User authentication
+* Automated tests using pytest
+* REST API
+* API documentation
+* Docker support
+* Production deployment configuration
+* Improved error handling and logging
+
+## Learning Goals
+
+This project is also being developed as a practical Python portfolio project.
+
+The goal is to demonstrate experience with:
+
+* Python
+* Flask
+* MySQL
+* SQL
+* CRUD operations
+* Relational database design
+* Foreign keys
+* HTML/CSS
+* Jinja2 templates
+* Form handling
+* Input validation
+* Git and GitHub
+* Web application architecture
+* Automated testing
+* API development
+
+## License
+
+This project is intended as a personal learning and portfolio project.
+
