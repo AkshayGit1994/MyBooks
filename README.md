@@ -1,3 +1,4 @@
+(.venv) akshay@DEBIANWM:~/jupyter-projects/mybooks_web$ cat README.md 
 # MyBooks — Flask Book Management System
 
 MyBooks is a web-based book management application built with **Python, Flask, MySQL, HTML, CSS, and Jinja2**.
@@ -295,4 +296,3 @@ The goal is to demonstrate experience with:
 ## License
 
 This project is intended as a personal learning and portfolio project.
-
